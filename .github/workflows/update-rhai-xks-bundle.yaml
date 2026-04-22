@@ -8,13 +8,15 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to update to (e.g., 3.4.0-ea.2). If not provided, uses "plus one" detection'
+        description: 'Version for versioned branches (e.g., 3.4.0-ea.2).'
         required: false
         type: string
+        default: 'main'
       branch:
-        description: 'Branch to use from rhods-operator. If not provided, uses "plus one" detection'
+        description: 'Source branch (main for latest code, or rhoai-X.Y for specific version)'
         required: false
         type: string
+        default: 'main'
 
 jobs:
   update-rhai-xks-bundle:
@@ -25,7 +27,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install Dependencies
         run: |
@@ -33,37 +35,61 @@ jobs:
           make tools
           echo "Dependencies installed successfully"
 
-      - name: Validate Inputs
-        id: input-validation
-        env:
-          VERSION_INPUT: ${{ github.event.inputs.version }}
-          BRANCH_INPUT: ${{ github.event.inputs.branch }}
-        run: |
-          # Validate version format (only allow semver with optional ea suffix)
-          if [[ -n "$VERSION_INPUT" ]]; then
-            if ! [[ "$VERSION_INPUT" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-ea\.[0-9]+)?$ ]]; then
-              echo "ERROR: Invalid version format: $VERSION_INPUT"
-              echo "Expected format: X.Y.Z or X.Y.Z-ea.N"
-              exit 1
-            fi
-          fi
 
-          echo "Input validation passed"
-
-      - name: Detect Target Version and Configure
+      - name: Configure Version and Branch
         id: version-detection
         env:
           VERSION_INPUT: ${{ github.event.inputs.version }}
           BRANCH_INPUT: ${{ github.event.inputs.branch }}
-        run: ./scripts/detect-rhoai-version.sh "$VERSION_INPUT" "$BRANCH_INPUT"
+        run: |
+          echo "=== RHAI XKS Bundle Configuration ==="
+
+          # Set defaults and validate with simple regex grouping
+          BRANCH="${BRANCH_INPUT:-main}"
+          VERSION="${VERSION_INPUT:-main}"
+
+          # Validate branch format (main or rhoai-X.Y or rhoai-X.Y-ea.N)
+          [[ ! "$BRANCH" =~ ^(main|rhoai-[0-9]+\.[0-9]+(-ea\.[0-9]+)?)$ ]] && {
+            echo "ERROR: Invalid branch format: $BRANCH"
+            echo "Expected: main or rhoai-X.Y or rhoai-X.Y-ea.N"
+            exit 1
+          }
+
+          # Validate version format (main or X.Y.Z or X.Y.Z-ea.N)
+          [[ ! "$VERSION" =~ ^(main|[0-9]+\.[0-9]+\.[0-9]+(-ea\.[0-9]+)?)$ ]] && {
+            echo "ERROR: Invalid version format: $VERSION"
+            echo "Expected: main or X.Y.Z or X.Y.Z-ea.N"
+            exit 1
+          }
+
+          echo "Final configuration:"
+          echo "  BRANCH: $BRANCH"
+          echo "  VERSION: $VERSION"
+
+          # Export environment variables securely
+          printf 'VERSION=%s\n' "$VERSION" >> "$GITHUB_ENV"
+          printf 'BRANCH=%s\n' "$BRANCH" >> "$GITHUB_ENV"
+
+          echo "Configuration completed successfully"
 
       - name: Execute Bundle Update
+        env:
+          VERSION: ${{ env.VERSION }}
+          BRANCH: ${{ env.BRANCH }}
         run: |
           echo "Executing bundle update..."
           echo "Working directory: $(pwd)"
-          echo "Executing: ${{ github.workspace }}/charts/rhai-on-xks-chart/scripts/update-bundle.sh ${{ env.VERSION }} --branch ${{ env.BRANCH }}"
+          echo "BRANCH: $BRANCH"
+          echo "VERSION: $VERSION"
 
-          ${{ github.workspace }}/charts/rhai-on-xks-chart/scripts/update-bundle.sh "${{ env.VERSION }}" --branch "${{ env.BRANCH }}"
+          # For main branch, use latest code without version specification
+          if [[ "$BRANCH" == "main" ]]; then
+            echo "Using main branch for latest code (VERSION=$VERSION is metadata only)"
+            ${{ github.workspace }}/charts/rhai-on-xks-chart/scripts/update-bundle.sh --branch "$BRANCH"
+          else
+            echo "Using versioned branch: $BRANCH with version: $VERSION"
+            ${{ github.workspace }}/charts/rhai-on-xks-chart/scripts/update-bundle.sh "$VERSION" --branch "$BRANCH"
+          fi
 
           echo "Bundle update completed successfully"
 
@@ -81,29 +107,25 @@ jobs:
           echo "Chart snapshots regenerated successfully"
 
       - name: Create Pull Request with Reusable Action
-        uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f # v7.0.5
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          title: "chore: update RHAI XKS chart bundle to version ${{ env.VERSION }}"
+          title: "chore: update RHAI XKS chart bundle from rhods-operator ${{ env.BRANCH }}"
           body: |
             ## Automated RHAI XKS Bundle Update
 
+            **Source Branch**: ${{ env.BRANCH }}
             **Version**: ${{ env.VERSION }}
-            **Branch**: ${{ env.BRANCH }}
-            **Latest Released**: ${{ env.LATEST_RELEASED }}
             **Triggered by**: ${{ github.event_name == 'schedule' && 'Scheduled run' || 'Manual trigger' }}
 
             This PR updates the RHAI XKS chart templates and snapshots to stay current with the rhods-operator repository.
 
             ### Changes
-            - Updated Helm templates from rhods-operator ${{ env.BRANCH }} branch
+            - Updated Helm templates from rhods-operator `${{ env.BRANCH }}` branch
             - Regenerated chart snapshots for testing
-            - Applied RHOAI "plus one" release progression logic
 
-            ### RHOAI Release Progression
-            - **Latest Released**: ${{ env.LATEST_RELEASED }}
-            - **Target Version**: ${{ env.VERSION }}
-            - **Target Branch**: ${{ env.BRANCH }}
+            ### Update Strategy
+            ${{ env.BRANCH == 'main' && '- **Main Branch**: Using latest code from main branch for cutting-edge features' || format('- **Versioned Branch**: Using specific version {0} from {1} branch', env.VERSION, env.BRANCH) }}
 
             This is an automated update using [peter-evans/create-pull-request](https://github.com/peter-evans/create-pull-request)
 
@@ -111,6 +133,6 @@ jobs:
             This PR automatically includes the `run-xks-e2e` label to trigger end-to-end tests.
           branch: automated-xks-bundle-update
           labels: run-xks-e2e
-          commit-message: "chore: update RHAI XKS chart bundle to version ${{ env.VERSION }}"
+          commit-message: "chore: update RHAI XKS chart bundle from rhods-operator ${{ env.BRANCH }}"
           author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
           delete-branch: false
