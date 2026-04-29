@@ -19,6 +19,9 @@ on:
 jobs:
   update-rhai-xks-bundle:
     runs-on: ubuntu-latest
+    concurrency:
+      group: update-rhai-xks-bundle
+      cancel-in-progress: true
     permissions:
       contents: write
       pull-requests: write
