@@ -4,6 +4,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: opendatahub-operator-system
+  annotations:
+    helm.sh/resource-policy: keep
   labels:
     helm.sh/chart: HELM_CHART_VERSION_REDACTED
     app.kubernetes.io/managed-by: Helm
@@ -36,6 +38,12 @@ metadata:
     app.kubernetes.io/managed-by: Helm
 spec:
   components:
+    aigateway:
+      batchGateway:
+        managementState: Removed
+      managementState: Removed
+      modelsAsAService:
+        managementState: Removed
     aipipelines:
       managementState: Removed
     dashboard:
@@ -44,8 +52,6 @@ spec:
       managementState: Removed
     kserve:
       managementState: Removed
-      modelsAsService:
-        managementState: Removed
       nim:
         managementState: Removed
       rawDeploymentServiceConfig: Headless
