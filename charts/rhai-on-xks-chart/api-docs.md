@@ -4,6 +4,12 @@
 
 RHAI on XKS Helm chart for non-OLM installation on non-OpenShift Kubernetes services (AWS, Azure, CoreWeave).
 
+## Requirements
+
+| Repository | Name | Version |
+|------------|------|---------|
+| file://../dependencies/cert-manager-operator | cert-manager-operator | 1.1.0 |
+
 ## Values
 
 | Key | Type | Default | Description |
@@ -19,7 +25,7 @@ RHAI on XKS Helm chart for non-OLM installation on non-OpenShift Kubernetes serv
 | aws.enabled | bool | `false` |  |
 | aws.kubernetesEngine.enabled | bool | `true` |  |
 | aws.kubernetesEngine.spec.dependencies.certManager.configuration | object | `{}` |  |
-| aws.kubernetesEngine.spec.dependencies.certManager.managementPolicy | string | `"Managed"` |  |
+| aws.kubernetesEngine.spec.dependencies.certManager.managementPolicy | string | `"Unmanaged"` |  |
 | aws.kubernetesEngine.spec.dependencies.gatewayAPI.configuration | object | `{}` |  |
 | aws.kubernetesEngine.spec.dependencies.gatewayAPI.managementPolicy | string | `"Managed"` |  |
 | aws.kubernetesEngine.spec.dependencies.lws.configuration.namespace | string | `"openshift-lws-operator"` |  |
@@ -37,13 +43,18 @@ RHAI on XKS Helm chart for non-OLM installation on non-OpenShift Kubernetes serv
 | azure.enabled | bool | `false` |  |
 | azure.kubernetesEngine.enabled | bool | `true` |  |
 | azure.kubernetesEngine.spec.dependencies.certManager.configuration | object | `{}` |  |
-| azure.kubernetesEngine.spec.dependencies.certManager.managementPolicy | string | `"Managed"` |  |
+| azure.kubernetesEngine.spec.dependencies.certManager.managementPolicy | string | `"Unmanaged"` |  |
 | azure.kubernetesEngine.spec.dependencies.gatewayAPI.configuration | object | `{}` |  |
 | azure.kubernetesEngine.spec.dependencies.gatewayAPI.managementPolicy | string | `"Managed"` |  |
 | azure.kubernetesEngine.spec.dependencies.lws.configuration.namespace | string | `"openshift-lws-operator"` |  |
 | azure.kubernetesEngine.spec.dependencies.lws.managementPolicy | string | `"Unmanaged"` |  |
 | azure.kubernetesEngine.spec.dependencies.sailOperator.configuration.namespace | string | `"istio-system"` |  |
 | azure.kubernetesEngine.spec.dependencies.sailOperator.managementPolicy | string | `"Managed"` |  |
+| cert-manager-operator.bundle.version | string | `"v1.18.1"` |  |
+| cert-manager-operator.enabled | bool | `true` |  |
+| cert-manager-operator.imagePullSecrets[0].name | string | `"rhai-pull-secret"` |  |
+| cert-manager-operator.operandNamespace | string | `"cert-manager"` |  |
+| cert-manager-operator.operatorNamespace | string | `"cert-manager-operator"` |  |
 | components.aigateway.enabled | bool | `false` |  |
 | components.aigateway.modelsAsAService.gateway.allowedRoutes.namespaces | object | `{}` |  |
 | components.aigateway.modelsAsAService.gateway.create | bool | `true` |  |
@@ -66,7 +77,7 @@ RHAI on XKS Helm chart for non-OLM installation on non-OpenShift Kubernetes serv
 | coreweave.enabled | bool | `false` |  |
 | coreweave.kubernetesEngine.enabled | bool | `true` |  |
 | coreweave.kubernetesEngine.spec.dependencies.certManager.configuration | object | `{}` |  |
-| coreweave.kubernetesEngine.spec.dependencies.certManager.managementPolicy | string | `"Managed"` |  |
+| coreweave.kubernetesEngine.spec.dependencies.certManager.managementPolicy | string | `"Unmanaged"` |  |
 | coreweave.kubernetesEngine.spec.dependencies.gatewayAPI.configuration | object | `{}` |  |
 | coreweave.kubernetesEngine.spec.dependencies.gatewayAPI.managementPolicy | string | `"Managed"` |  |
 | coreweave.kubernetesEngine.spec.dependencies.lws.configuration.namespace | string | `"openshift-lws-operator"` |  |
@@ -85,8 +96,7 @@ RHAI on XKS Helm chart for non-OLM installation on non-OpenShift Kubernetes serv
 | hooks.resources.limits.memory | string | `"512Mi"` |  |
 | hooks.resources.requests.cpu | string | `"50m"` |  |
 | hooks.resources.requests.memory | string | `"64Mi"` |  |
-| imagePullSecret.dependencyNamespaces[0] | string | `"cert-manager-operator"` |  |
-| imagePullSecret.dependencyNamespaces[1] | string | `"cert-manager"` |  |
+| imagePullSecret.dependencyNamespaces | list | `[]` |  |
 | imagePullSecret.dockerConfigJson | string | `""` |  |
 | imagePullSecret.name | string | `"rhai-pull-secret"` |  |
 | installCRDs | bool | `true` |  |
