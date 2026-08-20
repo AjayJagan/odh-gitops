@@ -200,6 +200,12 @@ charts:
           - aws.enabled=true
           - components.kserve.gateway.allowedRoutes.namespaces.from=Same
 
+      - name: azure-without-cert-manager
+        setFlags:
+          - azure.enabled=true
+          - cert-manager-operator.enabled=false
+          - components.kserve.gateway.allowedRoutes.namespaces.from=Same
+
       - name: azure-with-maas
         setFlags:
           - azure.enabled=true
