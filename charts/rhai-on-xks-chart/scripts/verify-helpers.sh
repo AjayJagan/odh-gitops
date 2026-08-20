@@ -153,7 +153,7 @@ wait_for_deployment() {
 wait_for_all_deployments_in_namespace() {
   local ns="$1"
   local deployments
-  if ! wait_for "deployments in ${ns}" kubectl get deployments -n "${ns}" -o name; then
+  if ! wait_for "deployments in ${ns}" bash -c "kubectl get deployments -n '${ns}' -o name 2>/dev/null | grep -q ."; then
     fail "No deployments found in namespace '${ns}'"
     return 1
   fi
@@ -355,7 +355,7 @@ helm_deploy() {
     ${extra_args[@]+"${extra_args[@]}"} \
     --timeout 10m; then
     log "Helm deploy failed — dumping debug info..."
-    local hook_jobs=(rhai-post-install-crs rhai-post-create-gateway rhai-post-create-maas-gateway rhai-pre-delete-crs)
+    local hook_jobs=(rhai-pre-upgrade-migrate-certmanager rhai-post-install-crs rhai-post-create-gateway rhai-post-create-maas-gateway rhai-pre-delete-crs)
     for job in "${hook_jobs[@]}"; do
       if kubectl get "job/${job}" -n "$NAMESPACE" &>/dev/null; then
         echo "  === job: ${job} ==="
