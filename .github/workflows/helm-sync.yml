@@ -12,6 +12,7 @@ on:
     paths:
       - 'charts/rhai-on-openshift-chart/**'
       - 'charts/rhai-on-xks-chart/**'
+      - 'charts/dependencies/**'
 
 permissions:
   contents: read
@@ -73,6 +74,24 @@ jobs:
               "source_repo/charts/${chart}/" \
               "target_repo/to-be-processed/helm/${chart}/"
           done
+
+          # Sync shared chart dependencies (out-of-tree file:// subcharts referenced by the
+          # charts above, e.g. rhai-on-xks-chart -> ../dependencies/cert-manager-operator).
+          # Mirror the whole tree so the relative file:// paths resolve identically downstream.
+          # Excludes are unanchored here (no leading '/') so they match each subchart one level
+          # down, e.g. dependencies/cert-manager-operator/test/.
+          if [ -d "source_repo/charts/dependencies" ]; then
+            echo "Updating helm chart dependencies"
+            # Recreate the dir so nothing removed in source can linger
+            rm -rf "target_repo/to-be-processed/helm/dependencies"
+            mkdir -p "target_repo/to-be-processed/helm/dependencies"
+            rsync -a \
+              --exclude 'test/' \
+              --exclude 'scripts/' \
+              --exclude 'api-docs.md' \
+              "source_repo/charts/dependencies/" \
+              "target_repo/to-be-processed/helm/dependencies/"
+          fi
 
       - name: Check for helm files changes
         id: helm-change-check
