@@ -86,6 +86,11 @@ charts:
           - 'components.aigateway.modelsAsAService.gateway.spec.listeners[0].allowedRoutes.namespaces={"from":"All"}'
           - 'components.kserve.gateway.spec.listeners[0].allowedRoutes.namespaces={"from":"All"}'
 
+      - name: monitoring-without-loki
+        setFlags:
+          - skipCrdCheck=true
+          - services.monitoring.dependencies.loki=false
+
   dependencies/cert-manager-operator:
     snapshots:
       - name: default
