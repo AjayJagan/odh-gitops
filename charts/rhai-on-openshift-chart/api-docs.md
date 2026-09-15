@@ -113,7 +113,7 @@ A Helm chart for installing ODH/RHOAI dependencies and component configurations
 | dependencies.leaderWorkerSet.config.spec | object | `{"logLevel":"Normal","managementState":"Managed","operatorLogLevel":"Normal"}` | LeaderWorkerSetOperator CR spec |
 | dependencies.leaderWorkerSet.dependencies | object | `{"certManager":true}` | Dependencies required by leader-worker-set |
 | dependencies.leaderWorkerSet.enabled | string | `"auto"` | Enable leader-worker-set: auto (if needed), true (always), false (never) |
-| dependencies.loki | object | `{"dependencies":{},"enabled":"auto","olm":{"channel":"stable-6.6","createNamespace":true,"name":"loki-operator","namespace":"openshift-operators-redhat"}}` | Loki operator |
+| dependencies.loki | object | `{"dependencies":{},"enabled":"auto","olm":{"channel":"stable-6.5","createNamespace":true,"name":"loki-operator","namespace":"openshift-operators-redhat"}}` | Loki operator |
 | dependencies.loki.dependencies | object | `{}` | Dependencies required by loki |
 | dependencies.loki.enabled | string | `"auto"` | Enable loki: auto (if needed), true (always), false (never) |
 | dependencies.loki.olm.createNamespace | bool | `true` | Ensure this global operator namespace exists when absent. Existing namespaces are not rendered. |

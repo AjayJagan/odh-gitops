@@ -549,7 +549,7 @@ dependencies:
     # -- Dependencies required by loki
     dependencies: {}
     olm:
-      channel: stable-6.6
+      channel: stable-6.5
       name: loki-operator
       namespace: openshift-operators-redhat
       # -- Ensure this global operator namespace exists when absent. Existing namespaces are not rendered.
