@@ -100,7 +100,6 @@ CRDs do not exist yet.
 helm upgrade --install rhaii ./charts/rhai-on-openshift-chart \
   --set profile=rhaii \
   --set operator.type=rhoai \
-  --set services.monitoring.dsci.managementState=Removed \
   -n rhai-gitops --create-namespace
 
 # Or using values file for full control
@@ -140,7 +139,6 @@ LeaderWorkerSetOperator, etc.):
 helm upgrade --install rhaii ./charts/rhai-on-openshift-chart \
   --set profile=rhaii \
   --set operator.type=rhoai \
-  --set services.monitoring.dsci.managementState=Removed \
   -n rhai-gitops
 
 # Or using values file

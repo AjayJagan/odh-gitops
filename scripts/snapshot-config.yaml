@@ -89,6 +89,7 @@ charts:
       - name: monitoring-without-loki
         setFlags:
           - skipCrdCheck=true
+          - services.monitoring.dsci.managementState=Managed
           - services.monitoring.dependencies.loki=false
 
   dependencies/cert-manager-operator:
