@@ -3916,7 +3916,9 @@ spec:
               echo "Waiting for CCM to remove cert-manager-operator pods (timeout: ${WAIT_TIMEOUT}s)..."
               ELAPSED=0
               while [[ $ELAPSED -lt $WAIT_TIMEOUT ]]; do
-                if ! REMAINING_PODS=$(kubectl get pods -n cert-manager-operator -o name); then
+                if ! REMAINING_PODS=$(kubectl get pods -n cert-manager-operator \
+                  -l name=cert-manager-operator \
+                  -o name); then
                   echo "Could not list cert-manager-operator pods; retrying..."
                   sleep 5
                   ELAPSED=$((ELAPSED + 5))
@@ -3933,16 +3935,18 @@ spec:
               if [[ $ELAPSED -ge $WAIT_TIMEOUT ]]; then
                 echo "ERROR: Timeout waiting for cert-manager-operator pods to be removed."
                 echo "Remaining pods:"
-                kubectl get pods -n cert-manager-operator || true
+                kubectl get pods -n cert-manager-operator -l name=cert-manager-operator || true
                 exit 1
               fi
               # CCM cleanup can remove the old operator's RBAC before it gracefully releases
               # this Lease. Do not shorten it until both the old Deployment and its pods are gone.
               if kubectl get lease cert-manager-operator-lock -n cert-manager-operator &>/dev/null; then
                 echo "Shortening stale cert-manager-operator-lock Lease duration to 1 second..."
-                kubectl patch lease cert-manager-operator-lock -n cert-manager-operator \
+                if ! kubectl patch lease cert-manager-operator-lock -n cert-manager-operator \
                   --type=merge \
-                  -p '{"spec":{"leaseDurationSeconds":1}}' 2>&1
+                  -p '{"spec":{"leaseDurationSeconds":1}}' 2>&1; then
+                  echo "WARNING: Could not shorten cert-manager-operator-lock Lease; continuing migration."
+                fi
               else
                 echo "cert-manager-operator-lock Lease not found; nothing to shorten."
               fi
