@@ -66,6 +66,7 @@ metadata:
   name: openshift-operators-redhat
   annotations:
     helm.sh/resource-policy: keep
+    openshift.io/node-selector: ""
   labels:
     helm.sh/chart: HELM_CHART_VERSION_REDACTED
     app.kubernetes.io/managed-by: Helm
@@ -428,7 +429,7 @@ spec:
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
-  name: loki-operator
+  name: openshift-operators-redhat
   namespace: openshift-operators-redhat
   labels:
     helm.sh/chart: HELM_CHART_VERSION_REDACTED

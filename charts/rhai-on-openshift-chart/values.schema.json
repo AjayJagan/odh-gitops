@@ -358,6 +358,10 @@
           "type": "boolean",
           "description": "Whether Helm should ensure the operator namespace exists when absent"
         },
+        "createOperatorGroup": {
+          "type": "boolean",
+          "description": "Whether Helm should ensure an OperatorGroup exists in the namespace when absent"
+        },
         "source": {
           "type": "string",
           "description": "Catalog source (overrides global.olm.source)"

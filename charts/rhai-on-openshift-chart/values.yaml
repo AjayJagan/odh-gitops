@@ -554,6 +554,8 @@ dependencies:
       namespace: openshift-operators-redhat
       # -- Ensure this global operator namespace exists when absent. Existing namespaces are not rendered.
       createNamespace: true
+      # -- Ensure an OperatorGroup exists in the namespace when absent. Existing OperatorGroups are not rendered.
+      createOperatorGroup: true
 
   # -- Custom Metrics Autoscaler (KEDA) operator
   customMetricsAutoscaler:

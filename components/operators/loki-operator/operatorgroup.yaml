@@ -1,7 +1,7 @@
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
-  name: loki-operator
+  name: openshift-operators-redhat
   namespace: openshift-operators-redhat
 spec:
   upgradeStrategy: Default
