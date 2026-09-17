@@ -5,6 +5,9 @@
 # as Helm subchart), this hook:
 #   1. Patches the active KubernetesEngine CR to set certManager.managementPolicy=Unmanaged
 #   2. Waits for CCM to remove the cert-manager-operator Deployment
+#   3. Waits for the old cert-manager-operator pods to be deleted
+#   4. Shortens the stale leader-election Lease so the Helm-managed replacement
+#      can acquire leadership without waiting for the old Lease to expire
 #
 # Expected env vars:
 #   RELEASE_NAME      - Current Helm release name
@@ -55,10 +58,15 @@ kubectl patch "$KE_FULL" --type=merge \
 echo "Waiting for CCM to clean up cert-manager-operator deployment (timeout: ${WAIT_TIMEOUT}s)..."
 ELAPSED=0
 while [[ $ELAPSED -lt $WAIT_TIMEOUT ]]; do
-  DEPLOY_COUNT=$(kubectl get deployments -n cert-manager-operator \
+  if ! REMAINING_DEPLOYMENTS=$(kubectl get deployments -n cert-manager-operator \
     -l infrastructure.opendatahub.io/part-of \
-    --no-headers 2>/dev/null | wc -l || echo "0")
-  if [[ "$DEPLOY_COUNT" -eq 0 ]]; then
+    -o name); then
+    echo "Could not list cert-manager-operator deployments; retrying..."
+    sleep 5
+    ELAPSED=$((ELAPSED + 5))
+    continue
+  fi
+  if [[ -z "$REMAINING_DEPLOYMENTS" ]]; then
     echo "cert-manager-operator deployment removed."
     break
   fi
@@ -72,5 +80,37 @@ if [[ $ELAPSED -ge $WAIT_TIMEOUT ]]; then
   kubectl get deployments -n cert-manager-operator 2>/dev/null || true
   exit 1
 fi
+echo "Waiting for CCM to remove cert-manager-operator pods (timeout: ${WAIT_TIMEOUT}s)..."
+ELAPSED=0
+while [[ $ELAPSED -lt $WAIT_TIMEOUT ]]; do
+  if ! REMAINING_PODS=$(kubectl get pods -n cert-manager-operator -o name); then
+    echo "Could not list cert-manager-operator pods; retrying..."
+    sleep 5
+    ELAPSED=$((ELAPSED + 5))
+    continue
+  fi
+  if [[ -z "$REMAINING_PODS" ]]; then
+    echo "cert-manager-operator pods removed."
+    break
+  fi
+  sleep 5
+  ELAPSED=$((ELAPSED + 5))
+done
 
-echo "Migration complete. Remaining cert-manager workloads will be adopted by Helm via --take-ownership."
+if [[ $ELAPSED -ge $WAIT_TIMEOUT ]]; then
+  echo "ERROR: Timeout waiting for cert-manager-operator pods to be removed."
+  echo "Remaining pods:"
+  kubectl get pods -n cert-manager-operator || true
+  exit 1
+fi
+# CCM cleanup can remove the old operator's RBAC before it gracefully releases
+# this Lease. Do not shorten it until both the old Deployment and its pods are gone.
+if kubectl get lease cert-manager-operator-lock -n cert-manager-operator &>/dev/null; then
+  echo "Shortening stale cert-manager-operator-lock Lease duration to 1 second..."
+  kubectl patch lease cert-manager-operator-lock -n cert-manager-operator \
+    --type=merge \
+    -p '{"spec":{"leaseDurationSeconds":1}}' 2>&1
+else
+  echo "cert-manager-operator-lock Lease not found; nothing to shorten."
+fi
+echo "Migration complete. The replacement cert-manager operator will reconcile any remaining operands."

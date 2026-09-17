@@ -60,6 +60,22 @@ rules:
       - get
       - list
   - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    resourceNames:
+      - cert-manager-operator-lock
+    verbs:
+      - get
+      - patch
+  - apiGroups:
       - infrastructure.opendatahub.io
     resources:
       - {{ (include "rhai-on-xks-chart.activeProvider" . | fromYaml).keResource }}
