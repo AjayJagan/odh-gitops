@@ -4073,14 +4073,21 @@ spec:
               
               # Wait for CCM's foreground deletion of the cert-manager operator Deployment.
               # No wait is needed when CCM has already removed it before the hook starts.
-              if kubectl get deployment -n cert-manager-operator \
-                -l infrastructure.opendatahub.io/part-of -o name 2>/dev/null | grep -q .; then
+              if ! deployment_names=$(kubectl get deployment -n cert-manager-operator \
+                -l infrastructure.opendatahub.io/part-of -o name 2>&1); then
+                echo "ERROR: Could not query the CCM cert-manager-operator Deployment: ${deployment_names}" >&2
+                exit 1
+              fi
+              if [[ -n "$deployment_names" ]]; then
                 echo "Waiting for CCM to remove cert-manager-operator deployment (timeout: ${WAIT_TIMEOUT}s)..."
                 if kubectl wait --for=delete deployment -n cert-manager-operator \
                   -l infrastructure.opendatahub.io/part-of --timeout="${WAIT_TIMEOUT}s"; then
                   echo "cert-manager-operator deployment removed."
-                elif ! kubectl get deployment -n cert-manager-operator \
-                  -l infrastructure.opendatahub.io/part-of -o name 2>/dev/null | grep -q .; then
+                elif ! remaining_deployment_names=$(kubectl get deployment -n cert-manager-operator \
+                  -l infrastructure.opendatahub.io/part-of -o name 2>&1); then
+                  echo "ERROR: Could not query the CCM cert-manager-operator Deployment after waiting: ${remaining_deployment_names}" >&2
+                  exit 1
+                elif [[ -z "$remaining_deployment_names" ]]; then
                   echo "cert-manager-operator deployment removed while starting the wait."
                 else
                   echo "ERROR: Timeout waiting for cert-manager-operator deployment to be removed."
