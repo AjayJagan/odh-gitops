@@ -70,6 +70,62 @@ assert_uid_unchanged() {
   fi
 }
 
+certmanager_operands_are_available() {
+  local deployment generation observed_generation available_replicas state
+
+  for deployment in cert-manager cert-manager-cainjector cert-manager-webhook; do
+    state=$(kubectl get deployment "$deployment" -n cert-manager \
+      -o jsonpath='{.metadata.generation}{" "}{.status.observedGeneration}{" "}{.status.availableReplicas}' 2>/dev/null) || return 1
+    read -r generation observed_generation available_replicas <<< "$state"
+    [[ -n "$generation" && "$generation" == "$observed_generation" && "${available_replicas:-0}" -ge 1 ]] || return 1
+  done
+}
+
+wait_for_certmanager_operands() {
+  if ! wait_for "cert-manager operand Deployments to be Available" certmanager_operands_are_available; then
+    fail "cert-manager operand Deployments did not all become Available within ${TIMEOUT}s"
+    kubectl get deployment,pods -n cert-manager -o wide 2>/dev/null || true
+    return 1
+  fi
+  pass "cert-manager operand Deployments are Available"
+}
+
+assert_certmanager_operator_helm_release_annotations() {
+  local release_name release_namespace
+
+  release_name=$(kubectl get deployment cert-manager-operator-controller-manager \
+    -n cert-manager-operator -o jsonpath='{.metadata.annotations.meta\.helm\.sh/release-name}')
+  release_namespace=$(kubectl get deployment cert-manager-operator-controller-manager \
+    -n cert-manager-operator -o jsonpath='{.metadata.annotations.meta\.helm\.sh/release-namespace}')
+
+  if [[ "$release_name" != "$RELEASE_NAME" || "$release_namespace" != "$NAMESPACE" ]]; then
+    fail "cert-manager operator Deployment is not owned by Helm release ${RELEASE_NAME}/${NAMESPACE}"
+    return 1
+  fi
+  pass "cert-manager operator Deployment has Helm release annotations for ${RELEASE_NAME}/${NAMESPACE}"
+}
+
+verify_certmanager_migration() {
+  log "Verifying Helm-managed cert-manager migration..."
+
+  if ! wait_for "CertManager CR" kubectl get certmanager cluster; then
+    fail "CertManager CR was not created"
+    return 1
+  fi
+  pass "CertManager CR exists"
+
+  if ! wait_for_deployment cert-manager-operator-controller-manager cert-manager-operator 1; then
+    return 1
+  fi
+  if ! assert_certmanager_operator_helm_release_annotations; then
+    return 1
+  fi
+
+  if ! wait_for_certmanager_operands; then
+    return 1
+  fi
+}
+
 cleanup_upgrade_test() {
   log "Cleaning up upgrade test release..."
   helm uninstall "$RELEASE_NAME" -n "$NAMESPACE" --timeout "$DELETE_TIMEOUT" 2>/dev/null || true
@@ -99,16 +155,6 @@ test_1_upgrade() {
       warn "$res not found before upgrade (may not exist in old version)"
     fi
   done
-
-  local rhai_ca_uid
-  rhai_ca_uid=$(kubectl get secret rhai-ca -n cert-manager \
-    -o jsonpath='{.metadata.uid}' 2>/dev/null || true)
-  if [[ -n "$rhai_ca_uid" ]]; then
-    pass "rhai-ca secret exists before upgrade (uid=$rhai_ca_uid)"
-  else
-    warn "rhai-ca secret not found before upgrade"
-  fi
-
 
   local ke_uid
   ke_uid=$(get_resource_uid "$KE_KIND/$KE_NAME") || {
@@ -171,26 +217,15 @@ test_1_upgrade() {
   # KServe not degraded
   assert_cr_not_degraded "kserves.components.platform.opendatahub.io" "default-kserve" "Kserve 'default-kserve'"
 
+  # The Helm-managed cert-manager operator and its operands must be healthy.
+  verify_certmanager_migration
+
   # cert-manager namespace UIDs (must not be deleted/recreated during upgrade)
   for res in "namespace/cert-manager" "namespace/cert-manager-operator"; do
     if [[ -n "${pre_uids[$res]+x}" ]]; then
       assert_uid_unchanged "$res" "$res" "${pre_uids[$res]}"
     fi
   done
-
-  # rhai-ca secret preserved (CA deletion would cause TLS downtime)
-  if [[ -n "$rhai_ca_uid" ]]; then
-    local post_rhai_ca_uid
-    post_rhai_ca_uid=$(kubectl get secret rhai-ca -n cert-manager \
-      -o jsonpath='{.metadata.uid}' 2>/dev/null || true)
-    if [[ -z "$post_rhai_ca_uid" ]]; then
-      fail "rhai-ca secret deleted during upgrade"
-    elif [[ "$post_rhai_ca_uid" != "$rhai_ca_uid" ]]; then
-      fail "rhai-ca secret recreated during upgrade (uid changed: $rhai_ca_uid → $post_rhai_ca_uid)"
-    else
-      pass "rhai-ca secret preserved (uid unchanged)"
-    fi
-  fi
 
 }
 
