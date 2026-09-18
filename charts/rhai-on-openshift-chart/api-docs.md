@@ -116,8 +116,8 @@ A Helm chart for installing ODH/RHOAI dependencies and component configurations
 | dependencies.loki | object | `{"dependencies":{},"enabled":"auto","olm":{"channel":"stable-6.5","createNamespace":true,"createOperatorGroup":true,"name":"loki-operator","namespace":"openshift-operators-redhat"}}` | Loki operator |
 | dependencies.loki.dependencies | object | `{}` | Dependencies required by loki |
 | dependencies.loki.enabled | string | `"auto"` | Enable loki: auto (if needed), true (always), false (never) |
-| dependencies.loki.olm.createNamespace | bool | `true` | Ensure this global operator namespace exists when absent. Existing namespaces are not rendered. |
-| dependencies.loki.olm.createOperatorGroup | bool | `true` | Ensure an OperatorGroup exists in the namespace when absent. Existing OperatorGroups are not rendered. |
+| dependencies.loki.olm.createNamespace | bool | `true` | Whether Helm should create the operator namespace. Set to false if the namespace already exists. |
+| dependencies.loki.olm.createOperatorGroup | bool | `true` | Whether Helm should create an OperatorGroup in the namespace. Set to false if an OperatorGroup already exists in the namespace. |
 | dependencies.nfd | object | `{"dependencies":{},"enabled":"auto","olm":{"channel":"stable","name":"nfd","namespace":"openshift-nfd","targetNamespaces":["openshift-nfd"]}}` | Node Feature Discovery operator (required for GPU support) |
 | dependencies.nfd.dependencies | object | `{}` | Dependencies required by NFD |
 | dependencies.nfd.enabled | string | `"auto"` | Enable NFD: auto (if needed), true (always), false (never) |

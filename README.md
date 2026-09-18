@@ -67,7 +67,7 @@ The repository is designed to be applied in **layers**, providing flexibility in
 | **Node Feature Discovery** | Detects hardware features and capabilities of nodes | `openshift-nfd` | OGX | |
 | **NVIDIA GPU Operator** | Enables GPU-accelerated workloads on NVIDIA hardware | `nvidia-gpu-operator` | Model Serving, OGX | Node Feature Discovery |
 
-Helm-generated operator namespaces use `helm.sh/resource-policy: keep` and remain after chart uninstall. `openshift-operators-redhat` is a shared platform namespace; remove Loki `Subscription` and `OperatorGroup` resources separately, but do not delete the namespace.
+Helm-generated operator namespaces use `helm.sh/resource-policy: keep` and remain after chart uninstall. `openshift-operators-redhat` is a shared platform namespace; remove Loki `Subscription` and chart-owned `OperatorGroup` resources separately, but do not delete the namespace. If the namespace already exists, set `dependencies.loki.olm.createNamespace: false`. If an `OperatorGroup` already exists within it, set `dependencies.loki.olm.createOperatorGroup: false` to prevent duplicate OperatorGroup creation.
 
 #### Operator Configuration Requirements
 

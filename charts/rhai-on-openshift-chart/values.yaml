@@ -552,9 +552,9 @@ dependencies:
       channel: stable-6.5
       name: loki-operator
       namespace: openshift-operators-redhat
-      # -- Ensure this global operator namespace exists when absent. Existing namespaces are not rendered.
+      # -- Whether Helm should create the operator namespace. Set to false if the namespace already exists.
       createNamespace: true
-      # -- Ensure an OperatorGroup exists in the namespace when absent. Existing OperatorGroups are not rendered.
+      # -- Whether Helm should create an OperatorGroup in the namespace. Set to false if an OperatorGroup already exists in the namespace.
       createOperatorGroup: true
 
   # -- Custom Metrics Autoscaler (KEDA) operator

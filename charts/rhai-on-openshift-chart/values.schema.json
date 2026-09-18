@@ -356,11 +356,15 @@
         },
         "createNamespace": {
           "type": "boolean",
-          "description": "Whether Helm should ensure the operator namespace exists when absent"
+          "description": "Whether Helm should create the operator namespace. Set to false if the namespace already exists."
         },
         "createOperatorGroup": {
           "type": "boolean",
-          "description": "Whether Helm should ensure an OperatorGroup exists in the namespace when absent"
+          "description": "Whether Helm should create an OperatorGroup in the namespace. Set to false if an OperatorGroup already exists in the namespace."
+        },
+        "operatorGroupName": {
+          "type": "string",
+          "description": "Custom name for the OperatorGroup (defaults to operator name or namespace)"
         },
         "source": {
           "type": "string",

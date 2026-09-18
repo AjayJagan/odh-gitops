@@ -92,6 +92,13 @@ charts:
           - services.monitoring.dsci.managementState=Managed
           - services.monitoring.dependencies.loki=false
 
+      - name: monitoring-with-external-loki-olm-resources
+        setFlags:
+          - skipCrdCheck=true
+          - services.monitoring.dsci.managementState=Managed
+          - dependencies.loki.olm.createNamespace=false
+          - dependencies.loki.olm.createOperatorGroup=false
+
   dependencies/cert-manager-operator:
     snapshots:
       - name: default

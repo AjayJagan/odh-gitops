@@ -10,19 +10,10 @@
 {{- if hasKey $dep.olm "createNamespace" -}}
 {{- $createNamespace = $dep.olm.createNamespace -}}
 {{- end -}}
-{{- if $createNamespace }}
-{{- $createNamespace = not (lookup "v1" "Namespace" "" $dep.olm.namespace) -}}
-{{- end }}
 {{- $createOperatorGroup := true -}}
 {{- if hasKey $dep.olm "createOperatorGroup" -}}
 {{- $createOperatorGroup = $dep.olm.createOperatorGroup -}}
 {{- end -}}
-{{- if $createOperatorGroup }}
-{{- $existingOg := lookup "operators.coreos.com/v1" "OperatorGroup" $dep.olm.namespace "" -}}
-{{- if and $existingOg $existingOg.items }}
-{{- $createOperatorGroup = false -}}
-{{- end }}
-{{- end }}
 {{ include "rhoai-dependencies.operator.olm" (dict
   "name" $dep.olm.name
   "operatorGroupName" ($dep.olm.operatorGroupName | default $dep.olm.namespace)
